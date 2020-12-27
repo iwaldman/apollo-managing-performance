@@ -1,0 +1,20 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server",
+    "dev": "nodemon server"
+  },
+  "keywords": [],
+  "author": "Irvin Waldman",
+  "license": "ISC",
+  "dependencies": {
+    "apollo-server": "^2.19.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.6"
+  }
+}
