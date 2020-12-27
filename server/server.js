@@ -1,4 +1,5 @@
 import { ApolloServer, gql } from 'apollo-server'
+import axios from 'axios'
 
 const typeDefs = gql`
   type Speaker {
@@ -20,15 +21,11 @@ const typeDefs = gql`
 
 const resolvers = {
   Query: {
-    speakers: (parent, args, context, info) => {
-      const speakerResults = {
-        datalist: [
-          { id: 101, first: 'David', last: 'Jones' },
-          { id: 102, first: 'Tom', last: 'Lewis' },
-          { id: 103, first: 'Doug', last: 'Thompson' },
-        ],
+    async speakers(parent, args, context, info) {
+      const response = await axios.get('http://localhost:5000/speakers')
+      return {
+        datalist: response.data,
       }
-      return speakerResults
     },
   },
   SpeakerResults: {
@@ -61,7 +58,11 @@ async function apolloServer() {
     resolvers,
   })
 
-  server.listen(4000, () => console.log('Server starting...'))
+  const PORT = process.env.PORT || 4000
+
+  server.listen(PORT, () => {
+    console.log(`ApolloServer GraphQL Simple running at port ${PORT}`)
+  })
 }
 
 apolloServer()
