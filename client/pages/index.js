@@ -24,9 +24,21 @@ const TOGGLE_SPEAKER_FAVORITE = gql`
   }
 `
 
+const DELETE_SPEAKER = gql`
+  mutation DeleteSpeaker($speakerId: Int!) {
+    deleteSpeaker(speakerId: $speakerId) {
+      id
+      first
+      last
+      favorite
+    }
+  }
+`
+
 const IndexPage = () => {
   const { loading, error, data } = useQuery(GET_SPEAKERS)
   const [toggleSpeakerFavorite] = useMutation(TOGGLE_SPEAKER_FAVORITE)
+  const [deleteSpeaker] = useMutation(DELETE_SPEAKER)
 
   if (loading === true) return <div className="col-sm6">Loading...</div>
 
@@ -59,6 +71,18 @@ const IndexPage = () => {
                         className={favorite === true ? 'fa fa-star orange' : 'fa fa-star-o orange'}
                       />
                       &nbsp;&nbsp; Favorite
+                    </span>
+                    <span
+                      onClick={() => {
+                        deleteSpeaker({
+                          variables: {
+                            speakerId: parseInt(id),
+                          },
+                          refetchQueries: [{ query: GET_SPEAKERS }],
+                        })
+                      }}
+                    >
+                      <i className="fa fa-trash red" /> Delete
                     </span>
                   </div>
                 </div>

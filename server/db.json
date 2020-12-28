@@ -1,15 +1,6 @@
 {
   "speakers": [
     {
-      "twitterHandle": "@cgalvan",
-      "company": "Early Stage Innovation",
-      "id": 14918,
-      "bio": "Claudia is a leading expert on product internationalization",
-      "first": "Claudia",
-      "last": "Galvan",
-      "favorite": true
-    },
-    {
       "twitterHandle": "@crichardson",
       "company": "Eventuate, Inc",
       "id": 8590,
