@@ -1,4 +1,4 @@
-import { gql, useQuery } from '@apollo/client'
+import { gql, useMutation, useQuery } from '@apollo/client'
 
 const GET_SPEAKERS = gql`
   query {
@@ -12,8 +12,21 @@ const GET_SPEAKERS = gql`
     }
   }
 `
+
+const TOGGLE_SPEAKER_FAVORITE = gql`
+  mutation ToggleSpeakerFavorite($speakerId: Int!) {
+    toggleSpeakerFavorite(speakerId: $speakerId) {
+      id
+      first
+      last
+      favorite
+    }
+  }
+`
+
 const IndexPage = () => {
   const { loading, error, data } = useQuery(GET_SPEAKERS)
+  const [toggleSpeakerFavorite] = useMutation(TOGGLE_SPEAKER_FAVORITE)
 
   if (loading === true) return <div className="col-sm6">Loading...</div>
 
@@ -32,12 +45,22 @@ const IndexPage = () => {
                   </h4>
                 </div>
                 <div className="fav-clm col-sm-5">
-                  <span>
-                    <div
-                      className={favorite === true ? 'fa fa-star orange' : 'fa fa-star-o orange'}
-                    />
-                    &nbsp;&nbsp; Favorite
-                  </span>
+                  <div className="action">
+                    <span
+                      onClick={() => {
+                        toggleSpeakerFavorite({
+                          variables: {
+                            speakerId: parseInt(id),
+                          },
+                        })
+                      }}
+                    >
+                      <div
+                        className={favorite === true ? 'fa fa-star orange' : 'fa fa-star-o orange'}
+                      />
+                      &nbsp;&nbsp; Favorite
+                    </span>
+                  </div>
                 </div>
               </div>
             )
