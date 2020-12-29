@@ -11,7 +11,7 @@ import {
   ModalHeader,
 } from 'reactstrap'
 
-const Toolbar = ({ insertSpeakerEvent }) => {
+const Toolbar = ({ insertSpeakerEvent, sortByIdDescending }) => {
   const [modal, setModal] = useState(false)
 
   const toggle = () => {
@@ -39,6 +39,9 @@ const Toolbar = ({ insertSpeakerEvent }) => {
             <div>
               <Button color="info" onClick={toggle}>
                 <span>Insert Speaker</span>
+              </Button>
+              <Button color="info" onClick={sortByIdDescending}>
+                <span>Sort Speakers By Id Descending</span>
               </Button>
               <Modal isOpen={modal} toggle={toggle}>
                 <Form onSubmit={handleSubmit}>

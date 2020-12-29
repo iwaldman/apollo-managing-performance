@@ -1,4 +1,4 @@
-import { gql, useMutation, useQuery } from '@apollo/client'
+import { gql, useMutation, useQuery, useApolloClient } from '@apollo/client'
 import Toolbar from '../components/Toolbar'
 
 const GET_SPEAKERS = gql`
@@ -52,6 +52,7 @@ const IndexPage = () => {
   const [toggleSpeakerFavorite] = useMutation(TOGGLE_SPEAKER_FAVORITE)
   const [deleteSpeaker] = useMutation(DELETE_SPEAKER)
   const [addSpeaker] = useMutation(ADD_SPEAKERS)
+  const apolloClient = useApolloClient()
 
   if (loading === true) return <div className="col-sm6">Loading...</div>
 
@@ -60,6 +61,18 @@ const IndexPage = () => {
   return (
     <>
       <Toolbar
+        sortByIdDescending={() => {
+          const { speakers } = apolloClient.cache.readQuery({ query: GET_SPEAKERS })
+          apolloClient.cache.writeQuery({
+            query: GET_SPEAKERS,
+            data: {
+              speakers: {
+                __typename: 'SpeakerResults',
+                datalist: [...speakers.datalist].sort((a, b) => b.id - a.id),
+              },
+            },
+          })
+        }}
         insertSpeakerEvent={(first, last, favorite) => {
           addSpeaker({
             variables: {
@@ -67,7 +80,19 @@ const IndexPage = () => {
               last,
               favorite,
             },
-            refetchQueries: [{ query: GET_SPEAKERS }],
+            // refetchQueries: [{ query: GET_SPEAKERS }],
+            update: (cache, { data: { addSpeaker } }) => {
+              const { speakers } = cache.readQuery({ query: GET_SPEAKERS })
+              cache.writeQuery({
+                query: GET_SPEAKERS,
+                data: {
+                  speakers: {
+                    __typename: 'SpeakerResults',
+                    datalist: [addSpeaker, ...speakers.datalist],
+                  },
+                },
+              })
+            },
           })
         }}
       />
@@ -90,6 +115,16 @@ const IndexPage = () => {
                             variables: {
                               speakerId: parseInt(id),
                             },
+                            optimisticResponse: {
+                              __typename: 'Mutation',
+                              toggleSpeakerFavorite: {
+                                id,
+                                first,
+                                last,
+                                favorite: !favorite,
+                                __typename: 'Speaker',
+                              },
+                            },
                           })
                         }}
                       >
@@ -106,7 +141,31 @@ const IndexPage = () => {
                             variables: {
                               speakerId: parseInt(id),
                             },
-                            refetchQueries: [{ query: GET_SPEAKERS }],
+                            optimisticResponse: {
+                              __typename: '__mutation',
+                              deleteSpeaker: {
+                                id,
+                                first,
+                                last,
+                                favorite,
+                                __typename: 'Speaker',
+                              },
+                            },
+                            // refetchQueries: [{ query: GET_SPEAKERS }],
+                            update: (cache, { data: { deleteSpeaker } }) => {
+                              const { speakers } = cache.readQuery({ query: GET_SPEAKERS })
+                              cache.writeQuery({
+                                query: GET_SPEAKERS,
+                                data: {
+                                  speakers: {
+                                    __typename: 'SpeakerResults',
+                                    datalist: speakers.datalist.filter(
+                                      (speaker) => speaker.id !== deleteSpeaker.id
+                                    ),
+                                  },
+                                },
+                              })
+                            },
                           })
                         }}
                       >
