@@ -10,8 +10,16 @@ import {
   ModalFooter,
   ModalHeader,
 } from 'reactstrap'
+import { useApolloClient, useMutation, useReactiveVar } from '@apollo/client'
+import { GET_SPEAKERS } from '../graphql/queries'
+import { ADD_SPEAKERS, TOGGLE_SPEAKER_FAVORITE } from '../graphql/mutations'
+import { checkBoxListVar, currentThemeVar } from '../graphql/apolloClient'
 
-const Toolbar = ({ insertSpeakerEvent, sortByIdDescending }) => {
+const Toolbar = () => {
+  const apolloClient = useApolloClient()
+  const [addSpeaker] = useMutation(ADD_SPEAKERS)
+  const [toggleSpeakerFavorite] = useMutation(TOGGLE_SPEAKER_FAVORITE)
+
   const [modal, setModal] = useState(false)
 
   const toggle = () => {
@@ -22,6 +30,45 @@ const Toolbar = ({ insertSpeakerEvent, sortByIdDescending }) => {
   const [last, setLast] = useState('')
   const [favorite, setFavorite] = useState(false)
 
+  const sortByIdDescending = () => {
+    const { speakers } = apolloClient.cache.readQuery({
+      query: GET_SPEAKERS,
+    })
+    apolloClient.cache.writeQuery({
+      query: GET_SPEAKERS,
+      data: {
+        speakers: {
+          __typename: 'SpeakerResults',
+          datalist: [...speakers.datalist].sort((a, b) => b.id - a.id),
+        },
+      },
+    })
+  }
+
+  const insertSpeakerEvent = (first, last, favorite) => {
+    addSpeaker({
+      variables: {
+        first,
+        last,
+        favorite,
+      },
+      update: (cache, { data: { addSpeaker } }) => {
+        const { speakers } = cache.readQuery({
+          query: GET_SPEAKERS,
+        })
+        cache.writeQuery({
+          query: GET_SPEAKERS,
+          data: {
+            speakers: {
+              __typename: 'SpeakerResults',
+              datalist: [addSpeaker, ...speakers.datalist],
+            },
+          },
+        })
+      },
+    })
+  }
+
   const handleSubmit = (event) => {
     event.preventDefault()
     insertSpeakerEvent(first, last, favorite)
@@ -31,17 +78,53 @@ const Toolbar = ({ insertSpeakerEvent, sortByIdDescending }) => {
     setModal(!modal)
   }
 
+  const currentTheme = useReactiveVar(currentThemeVar)
+
   return (
     <section className="toolbar">
       <div className="container">
         <ul className="toolrow">
           <li>
+            <strong>Theme</strong>&nbsp;
+            <label className="dropmenu">
+              <select
+                className="form-control theme"
+                value={currentTheme}
+                onChange={({ currentTarget }) => {
+                  currentThemeVar(currentTarget.value)
+                }}
+              >
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </label>
+          </li>
+          <li>
             <div>
               <Button color="info" onClick={toggle}>
                 <span>Insert Speaker</span>
               </Button>
-              <Button color="info" onClick={sortByIdDescending}>
+              &nbsp;
+              <Button onClick={sortByIdDescending} color="info">
                 <span>Sort Speakers By Id Descending</span>
+              </Button>
+              &nbsp;
+              <Button
+                color="info"
+                onClick={() => {
+                  const selectedSpeakerIds = checkBoxListVar()
+                  if (selectedSpeakerIds) {
+                    selectedSpeakerIds.forEach((speakerId) => {
+                      toggleSpeakerFavorite({
+                        variables: {
+                          speakerId: parseInt(speakerId),
+                        },
+                      })
+                    })
+                  }
+                }}
+              >
+                <span>Toggle All Checked</span>
               </Button>
               <Modal isOpen={modal} toggle={toggle}>
                 <Form onSubmit={handleSubmit}>
