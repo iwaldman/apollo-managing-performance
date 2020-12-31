@@ -11,12 +11,15 @@ import {
   ModalHeader,
 } from 'reactstrap'
 import { useApolloClient, useMutation, useReactiveVar } from '@apollo/client'
+
 import { GET_SPEAKERS } from '../graphql/queries'
 import { ADD_SPEAKERS, TOGGLE_SPEAKER_FAVORITE } from '../graphql/mutations'
-import { checkBoxListVar, currentThemeVar } from '../graphql/apolloClient'
+import { currentThemeVar, checkBoxListVar, paginationDataVar } from '../graphql/apolloClient'
+import PagingOffsetLimitControl from './PagingOffsetLimitControl'
 
-const Toolbar = () => {
+const Toolbar = ({ totalItemCount }) => {
   const apolloClient = useApolloClient()
+  const paginationData = useReactiveVar(paginationDataVar)
   const [addSpeaker] = useMutation(ADD_SPEAKERS)
   const [toggleSpeakerFavorite] = useMutation(TOGGLE_SPEAKER_FAVORITE)
 
@@ -33,13 +36,25 @@ const Toolbar = () => {
   const sortByIdDescending = () => {
     const { speakers } = apolloClient.cache.readQuery({
       query: GET_SPEAKERS,
+      variables: {
+        limit: paginationData.limit,
+        offset: paginationData.offset,
+      },
     })
     apolloClient.cache.writeQuery({
       query: GET_SPEAKERS,
+      variables: {
+        limit: paginationData.limit,
+        offset: paginationData.offset,
+      },
       data: {
         speakers: {
           __typename: 'SpeakerResults',
           datalist: [...speakers.datalist].sort((a, b) => b.id - a.id),
+          pageInfo: {
+            __typename: 'PageInfo',
+            totalItemCount: totalItemCount,
+          },
         },
       },
     })
@@ -55,13 +70,25 @@ const Toolbar = () => {
       update: (cache, { data: { addSpeaker } }) => {
         const { speakers } = cache.readQuery({
           query: GET_SPEAKERS,
+          variables: {
+            limit: paginationData.limit,
+            offset: paginationData.offset,
+          },
         })
         cache.writeQuery({
           query: GET_SPEAKERS,
+          variables: {
+            limit: paginationData.limit,
+            offset: paginationData.offset,
+          },
           data: {
             speakers: {
               __typename: 'SpeakerResults',
               datalist: [addSpeaker, ...speakers.datalist],
+              pageInfo: {
+                __typename: 'PageInfo',
+                totalItemCount: totalItemCount,
+              },
             },
           },
         })
@@ -79,13 +106,16 @@ const Toolbar = () => {
   }
 
   const currentTheme = useReactiveVar(currentThemeVar)
+  const lastPage = Math.trunc((totalItemCount - 1) / paginationData.limit)
 
   return (
     <section className="toolbar">
       <div className="container">
         <ul className="toolrow">
           <li>
-            <strong>Theme</strong>&nbsp;
+            <PagingOffsetLimitControl lastPage={lastPage} />
+          </li>
+          <li>
             <label className="dropmenu">
               <select
                 className="form-control theme"
